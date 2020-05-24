@@ -1,4 +1,4 @@
-module.exports = hanlder => {
+exports.asyncMiddleware = hanlder => {
   return async (req, res, next) => {
     try {
       await hanlder(req, res);
