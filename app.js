@@ -6,27 +6,22 @@ var logger = require('morgan');
 const socketio = require('socket.io');
 const http = require('http');
 const socket = require('./socket/socket');
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var messagesRouter = require('./routes/messages');
 
+//Middlewares
+const cors = require('./middlewares/cors');
+
 var app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-socket.startSocketConnection(io, app);
+socket.initialize(io, app);
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+require('./init/db')();
 
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authentication'
-  );
-
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
-
-  next();
-});
+app.use(cors);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

@@ -1,8 +1,8 @@
-module.exports.startSocketConnection = (io, app) => {
+module.exports.initialize = (io, app) => {
   io.on('connection', socket => {
-    console.log('new web socket connection');
     socket.emit('message', 'Message from socket');
     app.set('socket', socket);
     app.set('io', io);
   });
 };
+// mongodb+srv://devxtian:dFKdrOkMzeQoPmy1@friendzspot-ztuc1.mongodb.net/friendzspot?retryWrites=true&w=majority

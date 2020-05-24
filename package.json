@@ -6,11 +6,17 @@
     "start": "nodemon app"
   },
   "dependencies": {
+    "bcrypt": "^4.0.1",
+    "config": "^3.3.1",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
+    "http-status": "^1.4.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.15",
+    "mongoose-unique-validator": "^2.0.3",
     "morgan": "~1.9.1",
     "socket.io": "^2.3.0"
   }
