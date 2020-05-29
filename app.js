@@ -1,27 +1,38 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 const socketio = require('socket.io');
 const http = require('http');
 const socket = require('./socket/socket');
+const cors = require('cors');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var messagesRouter = require('./routes/messages');
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const notificationsRouter = require('./routes/notifications');
+const messagesRouter = require('./routes/messages');
 
 //Middlewares
-const cors = require('./middlewares/cors');
+//const cors = require('./middlewares/cors');
 
-var app = express();
+const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 socket.initialize(io, app);
 
 require('./init/db')();
 
-app.use(cors);
+const corsOptions = {
+  origin: '*',
+  allowedHeaders:
+    'Origin, X-Requested-With, Content-Type, Accept, Authentication, authorization',
+  methods: 'GET,PUT,PATCH,POST,DELETE',
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -35,6 +46,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/notifications', notificationsRouter);
 app.use('/api/messages', messagesRouter);
 
 // catch 404 and forward to error handler
