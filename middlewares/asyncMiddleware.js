@@ -3,6 +3,7 @@ exports.asyncMiddleware = hanlder => {
     try {
       await hanlder(req, res);
     } catch (ex) {
+      console.log(ex);
       next(ex);
     }
   };

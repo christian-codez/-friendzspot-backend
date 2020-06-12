@@ -1,18 +1,17 @@
-const express = require('express');
-const router = express.Router();
+var express = require('express');
+var router = express.Router();
+const auth = require('../middlewares/auth');
+const messageController = require('../controllers/messageController');
 
-/* GET users listing. */
-router.post('/send', function (req, res, next) {
-  console.log(req.body);
-  const io = req.app.get('io');
-  const socket = req.app.get('socket');
-  console.log({ socket });
-  io.emit('message', {
-    sender: '1',
-    receiver: '2',
-    body: req.body.message,
-  });
-  res.send({ data: req.body });
-});
+router.post('/send', auth, messageController.sendFriendMessage);
+router.post('/get-user-messages', auth, messageController.getUserMessages);
+router.post('/typing-started', auth, messageController.typingStarted);
+router.post('/typing-stopped', auth, messageController.typingStopped);
+router.delete(
+  '/clear-chat-history/:friendId',
+  auth,
+  messageController.clearChatHistory
+);
+router.post('/lastmessages', auth, messageController.getLastUserMessages);
 
 module.exports = router;

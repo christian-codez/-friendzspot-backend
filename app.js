@@ -12,6 +12,7 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const notificationsRouter = require('./routes/notifications');
 const messagesRouter = require('./routes/messages');
+const callsRouter = require('./routes/calls');
 
 //Middlewares
 //const cors = require('./middlewares/cors');
@@ -48,6 +49,9 @@ app.use('/', indexRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/messages', messagesRouter);
+app.use('/api/calls', callsRouter);
+
+app.use('/uploads/images', express.static(path.join('uploads', 'images')));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

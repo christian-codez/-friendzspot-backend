@@ -5,6 +5,10 @@ const { generateToken } = require('../helpers/manage-tokens');
 const { newError } = require('../helpers/error');
 const bcrypt = require('bcrypt');
 const { verifyToken } = require('../helpers/manage-tokens');
+const {
+  socketUserConnected,
+  socketUserDisconnected,
+} = require('../helpers/socket-helpers');
 
 //returns all existing users
 exports.index = asyncMiddleware(async (req, res) => {
@@ -18,6 +22,13 @@ exports.index = asyncMiddleware(async (req, res) => {
 
 exports.single = asyncMiddleware(async (req, res) => {
   const user = await User.findUser(req);
+
+  if (!user) throw newError('User was not found', status.NOT_FOUND);
+
+  res.send(user);
+});
+exports.unFriend = asyncMiddleware(async (req, res) => {
+  const user = await User.unFriend(req);
 
   if (!user) throw newError('User was not found', status.NOT_FOUND);
 
@@ -40,6 +51,31 @@ exports.acceptFriendRequest = asyncMiddleware(async (req, res) => {
 
   res.send(user);
 });
+exports.blockFriend = asyncMiddleware(async (req, res) => {
+  const user = await User.blockFriend(req);
+
+  if (!user)
+    return res.status(status.BAD_REQUEST).send('Friends could not be blocked');
+
+  res.send(user);
+});
+exports.getBlockFriends = asyncMiddleware(async (req, res) => {
+  const user = await User.getBlockFriends(req);
+
+  if (!user)
+    return res.status(status.NOT_FOUND).send('Friends could not be found');
+
+  res.send(user);
+});
+exports.unBlockFriend = asyncMiddleware(async (req, res) => {
+  const user = await User.unBlockFriend(req);
+
+  if (!user)
+    return res.send('Friends could not be unblocked', status.BAD_REQUEST);
+
+  res.send(user);
+});
+
 exports.people = asyncMiddleware(async (req, res) => {
   const user = await User.getPeople(req);
 
@@ -48,6 +84,19 @@ exports.people = asyncMiddleware(async (req, res) => {
   res.send(user);
 });
 
+exports.logout = asyncMiddleware(async (req, res) => {
+  const me = await User.findUser(req.params.id);
+  const userId = me._id;
+  const { socketId } = await User.findSocketID(userId);
+
+  const user = await User.findUser(userId);
+  user.lastseen = new Date();
+  await user.save();
+
+  socketUserDisconnected(req, userId, socketId);
+
+  res.json(me);
+});
 exports.login = asyncMiddleware(async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
 
@@ -61,19 +110,36 @@ exports.login = asyncMiddleware(async (req, res) => {
 
   const token = generateToken(user);
 
+  socketUserConnected(req, user._id, user.socketId);
+
   res.json({ ...user._doc, token });
 });
 exports.updateSocketID = asyncMiddleware(async (req, res) => {
   const user = await User.updateSocketID(req);
 
+  const socketId = user.socketId;
+  const userId = user._id;
+
+  socketUserConnected(req, userId, socketId);
+
   if (!user)
-    throw newError('Login failed, wrong email/password', status.NOT_FOUND);
+    throw newError('socket Id could not be updated!', status.BAD_REQUEST);
 
   res.json(user);
 });
 
 exports.loginToken = asyncMiddleware(async (req, res) => {
   const user = await verifyToken(req.params.token);
+  const userObject = await User.findUser(user.id);
+  res.json(userObject);
+});
+
+exports.updateProfilePhoto = asyncMiddleware(async (req, res) => {
+  const user = await User.updateProfilePhoto(req);
+
+  if (!user)
+    throw newError('Could not update user profile photo', status.BAD_REQUEST);
+
   res.json(user);
 });
 
@@ -97,6 +163,10 @@ exports.update = asyncMiddleware(async (req, res) => {
 
   const token = generateToken(updatedUser);
   res.header({ authorization: token }).send(updatedUser);
+});
+exports.updateMe = asyncMiddleware(async (req, res) => {
+  const user = await User.updateMe(req);
+  res.send(user);
 });
 
 exports.delete = asyncMiddleware(async (req, res) => {

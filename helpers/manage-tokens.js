@@ -19,7 +19,8 @@ const generateToken = user => {
       password: user.password,
     };
     const key = process.env.jwtprivatekey || 'jwtfriendzspotkey';
-    return jwt.sign(userSignature, key, { expiresIn: '48hr' });
+    //return jwt.sign(userSignature, key, { expiresIn: '48hr' });
+    return jwt.sign(userSignature, key);
   } catch (error) {
     return false;
   }
