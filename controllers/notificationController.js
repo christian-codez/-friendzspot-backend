@@ -2,6 +2,7 @@ const { asyncMiddleware } = require('../middlewares/asyncMiddleware');
 const { Notification } = require('../models/notification');
 const status = require('http-status');
 const { newError } = require('../helpers/error');
+const { User } = require('../models/user');
 
 //returns all existing notifications
 exports.index = asyncMiddleware(async (req, res) => {
@@ -13,10 +14,27 @@ exports.index = asyncMiddleware(async (req, res) => {
   res.send(notifications);
 });
 exports.create = asyncMiddleware(async (req, res) => {
+  const io = req.app.get('io');
   const notifications = await Notification.create(req);
 
   if (!notifications)
     throw newError('notification could not be created!', status.BAD_REQUEST);
+
+  const receiver = req.body.receiver;
+  const { socketId } = await User.findSocketID(receiver);
+
+  try {
+    if (io.sockets.sockets[socketId] != undefined) {
+      io.sockets.connected[socketId].emit(
+        'notification',
+        'You have a new friend request'
+      );
+    } else {
+      console.log('Socket not connected');
+    }
+  } catch (error) {
+    console.log(error);
+  }
 
   res.status(status.CREATED).send(notifications);
 });
