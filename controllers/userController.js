@@ -9,13 +9,13 @@ const {
   socketUserConnected,
   socketUserDisconnected,
 } = require('../helpers/socket-helpers');
+const httpStatus = require('http-status');
 
 //returns all existing users
 exports.index = asyncMiddleware(async (req, res) => {
   const users = await User.users();
-
   if (users.length <= 0)
-    throw newError('Users was not found', status.NOT_FOUND);
+    throw newError('Users were not found', status.NOT_FOUND);
 
   res.send(users);
 });
@@ -34,6 +34,31 @@ exports.unFriend = asyncMiddleware(async (req, res) => {
 
   res.send(user);
 });
+exports.checkIsOnline = asyncMiddleware(async (req, res) => {
+  const reqUserId = req.params.id;
+  const io = req.app.get('io');
+
+  const { socketId } = await User.findSocketID(reqUserId);
+
+  try {
+    if (io.sockets.sockets[socketId] != undefined) {
+      console.log('Found');
+      res.status(httpStatus.OK).send({
+        status: 'online',
+        id: reqUserId,
+      });
+    } else {
+      res.status(httpStatus.OK).send({
+        status: 'offline',
+        id: reqUserId,
+      });
+      console.log('Socket not connected');
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 exports.getFriends = asyncMiddleware(async (req, res) => {
   const friends = await User.getFriends(req);
 
@@ -55,12 +80,12 @@ exports.blockFriend = asyncMiddleware(async (req, res) => {
   const user = await User.blockFriend(req);
 
   if (!user)
-    return res.status(status.BAD_REQUEST).send('Friends could not be blocked');
+    return res.status(status.BAD_REQUEST).send('Friend could not be blocked');
 
   res.send(user);
 });
-exports.getBlockFriends = asyncMiddleware(async (req, res) => {
-  const user = await User.getBlockFriends(req);
+exports.getBlockedFriends = asyncMiddleware(async (req, res) => {
+  const user = await User.getBlockedFriends(req);
 
   if (!user)
     return res.status(status.NOT_FOUND).send('Friends could not be found');
@@ -71,7 +96,7 @@ exports.unBlockFriend = asyncMiddleware(async (req, res) => {
   const user = await User.unBlockFriend(req);
 
   if (!user)
-    return res.send('Friends could not be unblocked', status.BAD_REQUEST);
+    return res.send('Friend could not be unblocked', status.BAD_REQUEST);
 
   res.send(user);
 });
@@ -98,10 +123,21 @@ exports.logout = asyncMiddleware(async (req, res) => {
   res.json(me);
 });
 exports.login = asyncMiddleware(async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
+  const user = await User.findOne({
+    email: req.body.email,
+  });
+
+  if (user.status === 'deactivated')
+    throw newError(
+      'Account not found. Please register a new account',
+      status.BAD_REQUEST
+    );
+
+  if (user.status === 'suspended')
+    throw newError('Account has been suspended', status.BAD_REQUEST);
 
   if (!user)
-    throw newError('Login failed, wrong email/password', status.NOT_FOUND);
+    throw newError('Login failed, wrong email/password', status.BAD_REQUEST);
 
   const match = bcrypt.compareSync(req.body.password, user.password);
 
@@ -142,12 +178,21 @@ exports.updateProfilePhoto = asyncMiddleware(async (req, res) => {
 
   res.json(user);
 });
+exports.updateCoverPhoto = asyncMiddleware(async (req, res) => {
+  const user = await User.updateCoverPhoto(req);
+
+  if (!user)
+    throw newError('Could not update user cover photo', status.BAD_REQUEST);
+
+  res.json(user);
+});
 
 exports.create = asyncMiddleware(async (req, res) => {
   //register new user
   const user = await User.register(req);
 
-  if (!user) throw new Error('user could not be created!', status.BAD_REQUEST);
+  if (!user)
+    throw newError('Could not update user cover photo', status.BAD_REQUEST);
 
   //generate token
   const token = generateToken(user);
@@ -172,6 +217,13 @@ exports.updateMe = asyncMiddleware(async (req, res) => {
 exports.delete = asyncMiddleware(async (req, res) => {
   const user = await User.deleteUser(req);
   if (!user) throw new Error('user could not be deleted', status.BAD_REQUEST);
+
+  res.send(user);
+});
+exports.deactivateMyAccount = asyncMiddleware(async (req, res) => {
+  const user = await User.deactivateMyAccount(req);
+  if (!user)
+    throw new Error('Account could not be deativated!', status.BAD_REQUEST);
 
   res.send(user);
 });

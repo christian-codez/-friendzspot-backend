@@ -1,0 +1,4 @@
+{
+  "db": "mongodb+srv://devxtian:dFKdrOkMzeQoPmy1@friendzspot-ztuc1.mongodb.net/friendzspot_test?retryWrites=true&w=majority",
+  "port": "6500"
+}

@@ -2,15 +2,16 @@ var express = require('express');
 var router = express.Router();
 const UserController = require('../controllers/userController');
 const auth = require('../middlewares/auth');
-const fileUpload = require('../middlewares/file-upload');
+const { fileUpload, coverPhotoUpload } = require('../middlewares/file-upload');
 
 /* CREATE new user */
 router.get('/', UserController.index);
 router.get('/my/friends', auth, UserController.getFriends);
 router.post('/login', UserController.login);
 router.post('/block-friend/:id', auth, UserController.blockFriend);
-router.get('/block-friends', auth, UserController.getBlockFriends);
+router.get('/blocked-friends', auth, UserController.getBlockedFriends);
 router.post('/unblock-friend/:id', auth, UserController.unBlockFriend);
+router.get('/check-is-online/:id', auth, UserController.checkIsOnline);
 
 router.get('/unfriend/:friendId', auth, UserController.unFriend);
 router.get('/:userId', UserController.single);
@@ -25,7 +26,13 @@ router.post(
   [auth, fileUpload.single('profile_photo_file')],
   UserController.updateProfilePhoto
 );
+router.post(
+  '/update/cover-photo',
+  [auth, coverPhotoUpload.single('cover_photo_file')],
+  UserController.updateCoverPhoto
+);
 router.post('/logout/:id', UserController.logout);
 router.delete('/:userId', UserController.delete);
+router.delete('/deactivate/me', auth, UserController.deactivateMyAccount);
 
 module.exports = router;

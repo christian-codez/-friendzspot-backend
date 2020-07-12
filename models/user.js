@@ -28,12 +28,27 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
+      // validate: {
+      //   validator: function (email) {
+      //     return this.model('User')
+      //       .findOne({ email: email })
+      //       .then(user => !user);
+      //   },
+      //   message: props => `${props.value} is already used by another user`,
+      // },
     },
     gender: {
       type: String,
       trim: true,
       lowercase: true,
       enum: ['male', 'female'],
+    },
+    status: {
+      type: String,
+      trim: true,
+      default: 'activated',
+      lowercase: true,
+      enum: ['activated', 'deactivated', 'suspended'],
     },
     password: {
       type: String,
@@ -48,6 +63,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     profilePhotoURL: {
+      type: String,
+      trim: true,
+    },
+    coverPhotoURL: {
       type: String,
       trim: true,
     },
@@ -87,7 +106,12 @@ userSchema.methods.toJSON = function () {
 };
 
 userSchema.statics.users = async function () {
+  //return all users
   return await this.find().select('-password');
+};
+
+userSchema.statics.findUser = async function (id) {
+  return await this.findOne({ _id: id }).populate('friends', '-password');
 };
 
 userSchema.statics.findSocketID = async function (id) {
@@ -95,27 +119,32 @@ userSchema.statics.findSocketID = async function (id) {
 };
 
 userSchema.statics.getPeople = async function (req) {
-  const friends = await this.findOne({ _id: req.user.id }).select('friends');
-
-  const people = await this.find({ email: { $ne: req.user.email } }).select(
-    '-password'
+  const { friends } = await this.findOne({ _id: req.user.id }).select(
+    'friends'
   );
 
+  //Get all the users in the database
+  const people = await this.find({
+    email: { $ne: req.user.email },
+    status: 'activated',
+  }).select('-password');
+
+  //Remove all the users that are already my friends
   const peopleList = people.filter(person => {
-    return !friends.friends.includes(person.id);
+    return !friends.includes(person.id);
   });
 
   return peopleList;
 };
 
-userSchema.statics.findUser = async function (id) {
-  return await this.findOne({ _id: id }).populate('friends', '-password');
-};
-
 userSchema.statics.getFriends = async function (req) {
   const friends = await this.findOne({ _id: req.user.id })
     .select('friends')
-    .populate('friends', '-password -id');
+    .populate({
+      path: 'friends',
+      select: '-password -id',
+      match: { status: 'activated' },
+    });
 
   return friends;
 };
@@ -129,20 +158,24 @@ userSchema.statics.getFriendsBasedOnSocketId = async function (socketId) {
 };
 
 userSchema.statics.unFriend = async function (req) {
+  //get the target friend ID
   const friendId = req.params.friendId;
+  //Get the account owners user ID
   const userId = req.user.id;
 
+  //Find the account owner
   const user = await this.findOne({ _id: userId });
+  //Extract friends from the list
+  const { friends } = user;
 
-  const friends = user.friends;
-
-  const filteredFriends = user.friends.filter(friend => {
+  //remove {friendId} from the friends array
+  const filteredFriends = friends.filter(friend => {
     id = JSON.stringify(friend);
     requestFriendId = JSON.stringify(friendId);
-
     return id !== requestFriendId;
   });
 
+  //check if the new filtered list is less than the user retrieved friends array
   if (filteredFriends.length < friends.length) {
     user.friends = filteredFriends;
     await user.save();
@@ -150,7 +183,7 @@ userSchema.statics.unFriend = async function (req) {
     throw newError('We could not find a friend', status.NOT_FOUND);
   }
 
-  //Find the removedFriend
+  //REMOVE YOUR DETAILS FROM THE TARGET FRIEND ARRAY LIST TOO
   const otherFriend = await this.findOne({ _id: friendId });
   const filteredOtherFriends = otherFriend.friends.filter(friend => {
     id = JSON.stringify(friend);
@@ -198,13 +231,13 @@ userSchema.statics.acceptFriendRequest = async function (req) {
 
   //get the senders
   const receiver = await this.findOne({ _id: req.body.friendRequestID });
-
+  //Check if you are already friends
   const isReceiverFriend = receiver.friends.filter(friendId => {
     id = JSON.stringify(friendId);
     receiverId = JSON.stringify(req.user.id);
     return id === receiverId;
   });
-
+  //If userID was not found in the list
   if (!isReceiverFriend.length > 0) {
     receiver.friends.push(req.user.id);
     await receiver.save();
@@ -247,7 +280,7 @@ userSchema.statics.blockFriend = async function (req) {
   return friendId;
 };
 
-userSchema.statics.getBlockFriends = async function (req) {
+userSchema.statics.getBlockedFriends = async function (req) {
   const uuid = req.user.id;
 
   //Find my account:
@@ -289,6 +322,16 @@ userSchema.statics.deleteUser = async function (req) {
   return await this.findByIdAndDelete(req.params.userId);
 };
 
+userSchema.statics.deactivateMyAccount = async function (req) {
+  return await this.findOneAndUpdate(
+    { _id: req.user.id },
+    { status: 'deactivated' },
+    {
+      new: true,
+    }
+  );
+};
+
 userSchema.statics.register = async function (req) {
   return await User({
     firstname: req.body.firstname,
@@ -316,8 +359,6 @@ userSchema.statics.updateUser = async function (req) {
   if (req.body.email) user.email = req.body.email;
   if (req.body.phone) user.phone = req.body.phone;
   if (req.body.userbio) user.userbio = req.body.userbio;
-  // if (req.body.password)
-  //   user.password = await helper.encrypt(req.body.password);
 
   //update the user account
   return await this.findOneAndUpdate({ _id: req.user.id }, user, {
@@ -331,6 +372,22 @@ userSchema.statics.updateProfilePhoto = async function (req) {
   if (user) {
     prevPhotoUrl = user.profilePhotoURL;
     user.profilePhotoURL = imagePath;
+    await user.save();
+    console.log('prevPhotoUrl: ', prevPhotoUrl);
+    fs.unlink(prevPhotoUrl, err => {
+      console.log('Error: ', err);
+    });
+  }
+
+  return user;
+};
+userSchema.statics.updateCoverPhoto = async function (req) {
+  const imagePath = req.file.path.replace(/\\/g, '/');
+  const user = await this.findOne({ _id: req.user.id });
+  let prevPhotoUrl;
+  if (user) {
+    prevPhotoUrl = user.coverPhotoURL;
+    user.coverPhotoURL = imagePath;
     await user.save();
     fs.unlink(prevPhotoUrl, err => {
       console.log(err);

@@ -1,5 +1,6 @@
 module.exports.initialize = (io, app) => {
   io.on('connection', socket => {
+    //Set these two objects so it can be accessible throughout the app (Esp. in the controllers)
     app.set('socket', socket);
     app.set('io', io);
   });
@@ -8,4 +9,3 @@ module.exports.initialize = (io, app) => {
     console.log('user disconnected');
   });
 };
-// mongodb+srv://devxtian:dFKdrOkMzeQoPmy1@friendzspot-ztuc1.mongodb.net/friendzspot?retryWrites=true&w=majority

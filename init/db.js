@@ -10,7 +10,6 @@ module.exports = async function () {
       useCreateIndex: true,
       useFindAndModify: false,
     });
-    console.log(`Connected to mongoDB`);
   } catch (error) {
     console.log(error);
   }

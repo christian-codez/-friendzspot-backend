@@ -81,7 +81,6 @@ exports.typingStarted = asyncMiddleware(async (req, res) => {
   try {
     if (io.sockets.sockets[socketId] != undefined) {
       io.sockets.connected[socketId].emit('started typing', myId);
-      console.log('Event Emitted');
     } else {
       console.log('Socket not connected');
     }
