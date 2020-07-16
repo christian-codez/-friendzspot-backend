@@ -127,6 +127,9 @@ exports.login = asyncMiddleware(async (req, res) => {
     email: req.body.email,
   });
 
+  if (!user)
+    throw newError('Login failed, wrong email/password', status.BAD_REQUEST);
+
   if (user.status === 'deactivated')
     throw newError(
       'Account not found. Please register a new account',
@@ -135,9 +138,6 @@ exports.login = asyncMiddleware(async (req, res) => {
 
   if (user.status === 'suspended')
     throw newError('Account has been suspended', status.BAD_REQUEST);
-
-  if (!user)
-    throw newError('Login failed, wrong email/password', status.BAD_REQUEST);
 
   const match = bcrypt.compareSync(req.body.password, user.password);
 

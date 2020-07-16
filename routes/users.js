@@ -5,7 +5,7 @@ const auth = require('../middlewares/auth');
 const { fileUpload, coverPhotoUpload } = require('../middlewares/file-upload');
 
 /* CREATE new user */
-router.get('/', UserController.index);
+router.get('/', auth, UserController.index);
 router.get('/my/friends', auth, UserController.getFriends);
 router.post('/login', UserController.login);
 router.post('/block-friend/:id', auth, UserController.blockFriend);
@@ -14,7 +14,7 @@ router.post('/unblock-friend/:id', auth, UserController.unBlockFriend);
 router.get('/check-is-online/:id', auth, UserController.checkIsOnline);
 
 router.get('/unfriend/:friendId', auth, UserController.unFriend);
-router.get('/:userId', UserController.single);
+router.get('/:userId', auth, UserController.single);
 router.get('/people/all', auth, UserController.people);
 router.get('/login/:token', UserController.loginToken);
 router.post('/', UserController.create);
