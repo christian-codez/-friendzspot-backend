@@ -18,6 +18,15 @@ const messageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
     },
+    deletedStatus: {
+      type: Boolean,
+      required: true,
+      trim: true,
+      default: false,
+      lowercase: true,
+      enum: [true, false],
+    },
+    deletedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     message: {
       type: String,
       required: true,
@@ -39,7 +48,7 @@ const messageSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
-      enum: ['friend', 'group'],
+      enum: ['friend', 'call', 'group'],
     },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } }
@@ -52,18 +61,37 @@ messageSchema.methods.toJSON = function () {
   return message;
 };
 
+messageSchema.statics.deleteChatMessage = async function (req) {
+  const message = await this.findOne({ _id: req.params.id });
+
+  if (message) {
+    message.deletedStatus = true;
+    message.deletedBy.push(req.user.id);
+    await message.save();
+  }
+
+  return message;
+};
+messageSchema.statics.deleteChatMessageForever = async function (req) {
+  const message = await this.findByIdAndDelete(req.params.id);
+  return message;
+};
+
 messageSchema.statics.sendFriendMessage = async function (
   sender,
   receiver,
-  message
+  message,
+  message_type
 ) {
   //Check if the receipient has blocked the sender...
   const user = await User.findOne({ _id: receiver });
-  const blockedFriends = user.blocked.includes(sender);
+  const senderObject = await User.findOne({ _id: sender });
+  const blockedSender = user.blocked.includes(sender);
+  const blockedReceiver = senderObject.blocked.includes(receiver);
 
-  if (blockedFriends)
+  if (blockedSender || blockedReceiver)
     throw newError(
-      `Sorry, you cannot send a message to this ${user.firstname}!`,
+      `Sorry, you cannot send a message to ${user.firstname}!`,
       status.BAD_REQUEST
     );
 
@@ -71,7 +99,7 @@ messageSchema.statics.sendFriendMessage = async function (
     sender: sender,
     receiver: receiver,
     message: message,
-    message_type: 'friend',
+    message_type: message_type,
   }).save();
 
   const lastmessage = await this.findOne({ _id: newmessage._id })

@@ -1,5 +1,6 @@
 const { asyncMiddleware } = require('../middlewares/asyncMiddleware');
 const { User } = require('../models/user');
+const { Message } = require('../models/messages');
 
 exports.audioCallInitiated = asyncMiddleware(async (req, res) => {
   const io = req.app.get('io');
@@ -8,13 +9,18 @@ exports.audioCallInitiated = asyncMiddleware(async (req, res) => {
   const { socketId } = await User.findSocketID(callData.receiverID);
 
   try {
-    //console.log(io.sockets.sockets[socketId]);
     if (io.sockets.sockets[socketId] != undefined) {
       io.sockets.connected[socketId].emit('incomingCall', {
         signalData: callData.signalData,
         callerId: callData.callerId,
         callerName: callData.callerName,
       });
+      const messageResponse = await Message.sendFriendMessage(
+        callData.callerId,
+        callData.receiverID,
+        `${new Date()}`,
+        'call'
+      );
     } else {
       io.sockets.connected[callData.socketID].emit(
         'receiverNotAvailable',

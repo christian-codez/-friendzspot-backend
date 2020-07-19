@@ -5,6 +5,7 @@ const uniqueValidator = require('mongoose-unique-validator');
 const { newError } = require('../helpers/error');
 const status = require('http-status');
 const { Notification } = require('../models/notification');
+const { toTitleCase } = require('../helpers/utils');
 
 const userSchema = new mongoose.Schema(
   {
@@ -334,9 +335,9 @@ userSchema.statics.deactivateMyAccount = async function (req) {
 
 userSchema.statics.register = async function (req) {
   return await User({
-    firstname: req.body.firstname,
-    lastname: req.body.lastname,
-    email: req.body.email,
+    firstname: toTitleCase(req.body.firstname),
+    lastname: toTitleCase(req.body.lastname),
+    email: req.body.email.toLowerCase(),
     password: req.body.password,
   }).save();
 };
@@ -354,9 +355,9 @@ userSchema.statics.updateSocketID = async function (req) {
 userSchema.statics.updateUser = async function (req) {
   const user = {};
 
-  if (req.body.firstname) user.firstname = req.body.firstname;
-  if (req.body.lastname) user.lastname = req.body.lastname;
-  if (req.body.email) user.email = req.body.email;
+  if (req.body.firstname) user.firstname = toTitleCase(req.body.firstname);
+  if (req.body.lastname) user.lastname = toTitleCase(req.body.lastname);
+  if (req.body.email) user.email = req.body.email.toLowerCase();
   if (req.body.phone) user.phone = req.body.phone;
   if (req.body.userbio) user.userbio = req.body.userbio;
 
@@ -385,13 +386,16 @@ userSchema.statics.updateCoverPhoto = async function (req) {
   const imagePath = req.file.path.replace(/\\/g, '/');
   const user = await this.findOne({ _id: req.user.id });
   let prevPhotoUrl;
-  if (user) {
+  if (user && user.coverPhotoURL) {
     prevPhotoUrl = user.coverPhotoURL;
     user.coverPhotoURL = imagePath;
     await user.save();
-    fs.unlink(prevPhotoUrl, err => {
-      console.log(err);
-    });
+
+    if (prevPhotoUrl) {
+      fs.unlink(prevPhotoUrl, err => {
+        console.log('Error occured during upload', err);
+      });
+    }
   }
 
   return user;

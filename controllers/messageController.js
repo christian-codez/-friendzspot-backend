@@ -8,7 +8,6 @@ const { User } = require('../models/user');
 exports.index = asyncMiddleware(async (req, res) => {});
 exports.sendFriendMessage = asyncMiddleware(async (req, res) => {
   const io = req.app.get('io');
-  const socket = req.app.get('socket');
 
   const receiver = req.body.receiverID;
   const sender = req.body.senderID;
@@ -17,7 +16,8 @@ exports.sendFriendMessage = asyncMiddleware(async (req, res) => {
   const messageResponse = await Message.sendFriendMessage(
     sender,
     receiver,
-    message
+    message,
+    'friend'
   );
 
   if (!messageResponse)
@@ -29,7 +29,10 @@ exports.sendFriendMessage = asyncMiddleware(async (req, res) => {
 
   try {
     if (io.sockets.sockets[socketId] != undefined) {
-      io.sockets.connected[socketId].emit('new message', messageResponse);
+      io.sockets.connected[socketId].emit(
+        'yuchat_message_received',
+        messageResponse
+      );
     } else {
       //SAVE THIS MESSAGE IN A PENDING BUFFER AND WHEN THE USER LOGS IN. TRY TO RESEND THE MESSAGE TO THEM
       console.log('Socket not connected');
@@ -66,6 +69,22 @@ exports.clearChatHistory = asyncMiddleware(async (req, res) => {
     throw newError('Messages could not be cleared', status.BAD_REQUEST);
 
   res.send(messages);
+});
+exports.deleteChatMessage = asyncMiddleware(async (req, res) => {
+  const message = await Message.deleteChatMessage(req);
+
+  if (!message)
+    throw newError('Messages could not be deleted', status.BAD_REQUEST);
+
+  res.send(message);
+});
+exports.deleteChatMessageForever = asyncMiddleware(async (req, res) => {
+  const message = await Message.deleteChatMessageForever(req);
+
+  if (!message)
+    throw newError('Messages could not be deleted', status.BAD_REQUEST);
+
+  res.send(message);
 });
 
 exports.typingStarted = asyncMiddleware(async (req, res) => {
@@ -104,7 +123,6 @@ exports.typingStopped = asyncMiddleware(async (req, res) => {
   try {
     if (io.sockets.sockets[socketId] != undefined) {
       io.sockets.connected[socketId].emit('stopped typing', myId);
-      console.log('Event Emitted');
     } else {
       console.log('Socket not connected');
     }

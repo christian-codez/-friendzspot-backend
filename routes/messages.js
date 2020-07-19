@@ -12,6 +12,16 @@ router.delete(
   auth,
   messageController.clearChatHistory
 );
+router.delete(
+  '/delete/chat/message/:id',
+  auth,
+  messageController.deleteChatMessage
+);
+router.delete(
+  '/delete/chat/message/forever/:id',
+  auth,
+  messageController.deleteChatMessageForever
+);
 router.post('/lastmessages', auth, messageController.getLastUserMessages);
 
 module.exports = router;

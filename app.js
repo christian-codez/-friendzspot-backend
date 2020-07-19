@@ -9,7 +9,6 @@ const usersRouter = require('./routes/users');
 const notificationsRouter = require('./routes/notifications');
 const messagesRouter = require('./routes/messages');
 const callsRouter = require('./routes/calls');
-
 const app = express();
 const Server = require('./init/server')(app);
 

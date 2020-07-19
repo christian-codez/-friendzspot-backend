@@ -18,7 +18,7 @@ const generateToken = user => {
       id: user._id,
       password: user.password,
     };
-    const key = process.env.jwtprivatekey || 'jwtfriendzspotkey';
+    const key = process.env.jwtprivatekey || 'yuchatheroku18';
     //return jwt.sign(userSignature, key, { expiresIn: '48hr' });
     return jwt.sign(userSignature, key);
   } catch (error) {
@@ -28,7 +28,7 @@ const generateToken = user => {
 
 const verifyToken = async token => {
   try {
-    const key = process.env.jwtprivatekey || 'jwtfriendzspotkey';
+    const key = process.env.jwtprivatekey || 'yuchatheroku18';
     decoded = jwt.verify(token, key);
     const user = await User.findOne({ _id: decoded.id });
     if (!user) throw new Error('Invalid Token');
