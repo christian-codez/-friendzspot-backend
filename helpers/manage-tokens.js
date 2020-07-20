@@ -1,6 +1,6 @@
 var jwt = require('jsonwebtoken');
 var { User } = require('../models/user');
-
+const testV = 'this is me';
 const generateToken = user => {
   try {
     if (
@@ -19,7 +19,6 @@ const generateToken = user => {
       password: user.password,
     };
     const key = process.env.jwtprivatekey || 'yuchatheroku18';
-    //return jwt.sign(userSignature, key, { expiresIn: '48hr' });
     return jwt.sign(userSignature, key);
   } catch (error) {
     return false;
@@ -30,7 +29,7 @@ const verifyToken = async token => {
   try {
     const key = process.env.jwtprivatekey || 'yuchatheroku18';
     decoded = jwt.verify(token, key);
-    const user = await User.findOne({ _id: decoded.id });
+    const user = await User.findUser(decoded.id);
     if (!user) throw new Error('Invalid Token');
     return user;
   } catch (error) {
@@ -41,4 +40,5 @@ const verifyToken = async token => {
 module.exports = {
   generateToken,
   verifyToken,
+  testV,
 };

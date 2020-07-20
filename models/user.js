@@ -3,6 +3,7 @@ const fs = require('fs');
 const helper = require('../helpers/encrypt');
 const uniqueValidator = require('mongoose-unique-validator');
 const { newError } = require('../helpers/error');
+//const mailActions = require('../mailer/yuchat-email-actions');
 const status = require('http-status');
 const { Notification } = require('../models/notification');
 const { toTitleCase } = require('../helpers/utils');
@@ -334,12 +335,15 @@ userSchema.statics.deactivateMyAccount = async function (req) {
 };
 
 userSchema.statics.register = async function (req) {
-  return await User({
+  const user = await User({
     firstname: toTitleCase(req.body.firstname),
     lastname: toTitleCase(req.body.lastname),
     email: req.body.email.toLowerCase(),
     password: req.body.password,
   }).save();
+
+  //await sendmail(user);
+  return user;
 };
 
 userSchema.statics.updateSocketID = async function (req) {
@@ -374,7 +378,6 @@ userSchema.statics.updateProfilePhoto = async function (req) {
     prevPhotoUrl = user.profilePhotoURL;
     user.profilePhotoURL = imagePath;
     await user.save();
-    console.log('prevPhotoUrl: ', prevPhotoUrl);
     fs.unlink(prevPhotoUrl, err => {
       console.log('Error: ', err);
     });

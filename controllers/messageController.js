@@ -29,10 +29,11 @@ exports.sendFriendMessage = asyncMiddleware(async (req, res) => {
 
   try {
     if (io.sockets.sockets[socketId] != undefined) {
-      io.sockets.connected[socketId].emit(
-        'yuchat_message_received',
-        messageResponse
-      );
+      // io.sockets.connected[socketId].emit(
+      //   'yuchat_message_received',
+      //   messageResponse
+      // );
+      io.to(socketId).emit('yuchat_message_received', messageResponse);
     } else {
       //SAVE THIS MESSAGE IN A PENDING BUFFER AND WHEN THE USER LOGS IN. TRY TO RESEND THE MESSAGE TO THEM
       console.log('Socket not connected');
@@ -99,7 +100,9 @@ exports.typingStarted = asyncMiddleware(async (req, res) => {
 
   try {
     if (io.sockets.sockets[socketId] != undefined) {
-      io.sockets.connected[socketId].emit('started typing', myId);
+      //io.sockets.connected[socketId].emit('started typing', myId);
+      //io.sockets.socket(socketId).emit('started typing', myId);
+      io.to(socketId).emit('started typing', myId);
     } else {
       console.log('Socket not connected');
     }

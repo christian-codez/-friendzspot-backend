@@ -42,7 +42,6 @@ exports.checkIsOnline = asyncMiddleware(async (req, res) => {
 
   try {
     if (io.sockets.sockets[socketId] != undefined) {
-      console.log('Found');
       res.status(httpStatus.OK).send({
         status: 'online',
         id: reqUserId,

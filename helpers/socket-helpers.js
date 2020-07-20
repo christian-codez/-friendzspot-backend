@@ -7,7 +7,6 @@ module.exports.socketUserConnected = async (req, userId, socketId) => {
   if (friends) {
     //Emit events to all friends
     friends.friends.forEach(friend => {
-      console.log(friend.socketId);
       //if friends socket connect is still valid
       if (io.sockets.sockets[friend.socketId] != undefined) {
         //emit an event to the particular socket
@@ -23,7 +22,6 @@ module.exports.socketUserDisconnected = async (req, userId, socketId) => {
   if (friends) {
     //Emit events to all friends
     friends.friends.forEach(friend => {
-      console.log(friend.socketId);
       //if friends socket connect is still valid
       if (io.sockets.sockets[friend.socketId] != undefined) {
         //emit an event to the particular socket
