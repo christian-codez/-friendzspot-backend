@@ -18,7 +18,7 @@ const generateToken = user => {
       id: user._id,
       password: user.password,
     };
-    const key = process.env.jwtprivatekey || 'yuchatheroku18';
+    const key = process.env.jwtprivatekey;
     return jwt.sign(userSignature, key);
   } catch (error) {
     return false;
@@ -27,7 +27,7 @@ const generateToken = user => {
 
 const verifyToken = async token => {
   try {
-    const key = process.env.jwtprivatekey || 'yuchatheroku18';
+    const key = process.env.jwtprivatekey;
     decoded = jwt.verify(token, key);
     const user = await User.findUser(decoded.id);
     if (!user) throw new Error('Invalid Token');

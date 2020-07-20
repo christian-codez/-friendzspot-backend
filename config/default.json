@@ -1,5 +1,4 @@
 {
-  "db": "mongodb+srv://devxtian:dFKdrOkMzeQoPmy1@friendzspot-ztuc1.mongodb.net/friendzspot?retryWrites=true&w=majority",
   "port": "4000",
   "url": "http://localhost:3000"
 }

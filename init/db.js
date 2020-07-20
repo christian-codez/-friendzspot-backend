@@ -3,7 +3,7 @@ const config = require('config');
 
 module.exports = async function () {
   try {
-    const db = config.get('db');
+    const db = `mongodb+srv://${process.env.dbpass}:dFKdrOkMzeQoPmy1@friendzspot-ztuc1.mongodb.net/${process.env.dbname}?retryWrites=true&w=majority`;
     const connection = await mongoose.connect(db, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
