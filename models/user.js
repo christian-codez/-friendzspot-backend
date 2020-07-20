@@ -373,14 +373,17 @@ userSchema.statics.updateUser = async function (req) {
 userSchema.statics.updateProfilePhoto = async function (req) {
   const imagePath = req.file.path.replace(/\\/g, '/');
   const user = await this.findOne({ _id: req.user.id });
+
   let prevPhotoUrl;
   if (user) {
     prevPhotoUrl = user.profilePhotoURL;
     user.profilePhotoURL = imagePath;
     await user.save();
-    fs.unlink(prevPhotoUrl, err => {
-      console.log('Error: ', err);
-    });
+    if (prevPhotoUrl) {
+      fs.unlink(prevPhotoUrl, err => {
+        console.log('Profile upload photo: ', err);
+      });
+    }
   }
 
   return user;
@@ -388,13 +391,14 @@ userSchema.statics.updateProfilePhoto = async function (req) {
 userSchema.statics.updateCoverPhoto = async function (req) {
   const imagePath = req.file.path.replace(/\\/g, '/');
   const user = await this.findOne({ _id: req.user.id });
+
   let prevPhotoUrl;
-  if (user && user.coverPhotoURL) {
+  if (user) {
     prevPhotoUrl = user.coverPhotoURL;
     user.coverPhotoURL = imagePath;
     await user.save();
 
-    if (prevPhotoUrl) {
+    if (prevPhotoUrl.length > 0) {
       fs.unlink(prevPhotoUrl, err => {
         console.log('Error occured during upload', err);
       });
